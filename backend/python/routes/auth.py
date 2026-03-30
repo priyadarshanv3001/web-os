@@ -28,17 +28,24 @@ def handle_send_otp():
     db.session.commit()
 
     # Send email
-    success = send_otp_email(email, otp_code)
-    
-    if success:
-        return jsonify({
-            "success": True,
-            "message": "OTP sent"
-        }), 200
-    else:
+    try:
+        success = send_otp_email(email, otp_code)
+        
+        if success:
+            return jsonify({
+                "success": True,
+                "message": "OTP sent"
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Failed to send OTP via Brevo API. Check backend logs."
+            }), 500
+    except Exception as e:
+        print("EXCEPTION in /send-otp route:", str(e))
         return jsonify({
             "success": False,
-            "error": "Failed to send OTP via email. Check backend logs."
+            "error": "Internal server error during OTP dispatch."
         }), 500
 
 @auth_bp.route('/verify-otp', methods=['POST'])

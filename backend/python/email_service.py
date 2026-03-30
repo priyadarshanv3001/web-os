@@ -6,15 +6,16 @@ def send_otp_email(email, otp_code):
     Sends an OTP email using the Brevo (Sendinblue) API.
     """
     api_key = os.environ.get("BREVO_API_KEY")
-    sender_email = "priyadarshan3001@gmail.com"
-    
-    if not api_key or not sender_email:
-        print(f"[WARNING] BREVO_API_KEY or BREVO_SENDER not set in environment variables.")
-        print(f"---------- [DEV MODE LOG] ----------")
-        print(f" Simulating sending OTP to: {email}")
-        print(f" Simulated OTP Code: {otp_code}")
-        print(f"------------------------------------")
-        return True
+    # Priority: Env Var > Hardcoded fallback
+    sender_email = os.environ.get("BREVO_SENDER") or "Bpriyadarshan3001@gmail.com"
+
+    print("DEBUG → API_KEY:", "FOUND" if api_key else "MISSING")
+    print("DEBUG → SENDER:", sender_email)
+    print("DEBUG → RECEIVER:", email)
+
+    if not api_key:
+        print("ERROR: BREVO_API_KEY MISSING")
+        return False
 
     url = "https://api.brevo.com/v3/smtp/email"
 
@@ -35,12 +36,9 @@ def send_otp_email(email, otp_code):
         response = requests.post(url, json=data, headers=headers)
         print("BREVO RESPONSE:", response.status_code, response.text)
         
-        if response.status_code in [200, 201]:
-            return True
-        else:
-            print(f"Failed to send email via Brevo: {response.text}")
-            return False
+        # Return True for 200/201 (Success)
+        return response.status_code in [200, 201]
             
     except Exception as e:
-        print(f"Error sending email via Brevo API: {str(e)}")
+        print("EXCEPTION in send_otp_email:", str(e))
         return False
