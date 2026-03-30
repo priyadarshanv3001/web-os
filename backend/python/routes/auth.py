@@ -31,9 +31,15 @@ def handle_send_otp():
     success = send_otp_email(email, otp_code)
     
     if success:
-        return jsonify({"message": "OTP sent successfully"}), 200
+        return jsonify({
+            "success": True,
+            "message": "OTP sent"
+        }), 200
     else:
-        return jsonify({"error": "Failed to send email via SMTP. Check server logs."}), 500
+        return jsonify({
+            "success": False,
+            "error": "Failed to send OTP via email. Check backend logs."
+        }), 500
 
 @auth_bp.route('/verify-otp', methods=['POST'])
 def handle_verify_otp():

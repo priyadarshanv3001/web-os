@@ -11,4 +11,8 @@ services:
         generateValue: true
       - key: PYTHON_VERSION
         value: 3.10.0
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER
+        sync: false
     healthCheckPath: /login

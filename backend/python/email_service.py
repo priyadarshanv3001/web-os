@@ -1,44 +1,46 @@
-import smtplib
-from email.message import EmailMessage
+import requests
 import os
 
-def send_otp_email(to_email, otp_code):
+def send_otp_email(email, otp_code):
+    """
+    Sends an OTP email using the Brevo (Sendinblue) API.
+    """
+    api_key = os.environ.get("BREVO_API_KEY")
+    sender_email = os.environ.get("Bpriyadarshan3001@gmail.com")
     
-    sender_email = os.environ.get("EMAIL_USER")
-    sender_password = os.environ.get("EMAIL_PASS")
-
-    if not sender_email or not sender_password:
-        print(f"[WARNING] SENDER_EMAIL or SENDER_PASSWORD not set in environment variables.")
+    if not api_key or not sender_email:
+        print(f"[WARNING] BREVO_API_KEY or BREVO_SENDER not set in environment variables.")
         print(f"---------- [DEV MODE LOG] ----------")
-        print(f" Simulating sending OTP to: {to_email}")
+        print(f" Simulating sending OTP to: {email}")
         print(f" Simulated OTP Code: {otp_code}")
         print(f"------------------------------------")
-        # In dev mode without password, we simulate a successful send so the user can see it in terminal
         return True
 
-    msg = EmailMessage()
-    msg.set_content(f"Your WebOS Authentication OTP is: {otp_code}\n\nThis code will expire in 5 minutes.")
+    url = "https://api.brevo.com/v3/smtp/email"
 
-    msg['Subject'] = 'WebOS Login verification code'
-    msg['From'] = f"WebOS System <{sender_email}>"
-    msg['To'] = to_email
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+
+    data = {
+        "sender": {"email": sender_email},
+        "to": [{"email": email}],
+        "subject": "Your Login OTP",
+        "htmlContent": f"<h2>Your WebOS Authentication OTP is: {otp_code}</h2><p>This code will expire in 5 minutes.</p>"
+    }
 
     try:
-        # Use Gmail's SMTP server with a 10-second timeout
-        print(f"Connecting to SMTP server for {to_email}...")
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.send_message(msg)
-        server.quit()
-        print(f"Successfully sent OTP to {to_email}")
-        return True
-    except smtplib.SMTPConnectError:
-        print(f"Error: Could not connect to SMTP server. Check internet or server block.")
-        return False
-    except smtplib.SMTPAuthenticationError:
-        print(f"Error: SMTP Authentication failed. Check EMAIL_USER and EMAIL_PASS (App Password required).")
-        return False
+        response = requests.post(url, json=data, headers=headers)
+        print("BREVO RESPONSE:", response.status_code, response.text)
+        
+        if response.status_code in [200, 201]:
+            return True
+        else:
+            print(f"Failed to send email via Brevo: {response.text}")
+            return False
+            
     except Exception as e:
-        print(f"Failed to send email to {to_email}: {str(e)}")
+        print(f"Error sending email via Brevo API: {str(e)}")
         return False

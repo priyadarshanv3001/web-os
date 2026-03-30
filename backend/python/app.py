@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from models import db
@@ -39,7 +42,7 @@ def create_app():
     os.makedirs(upload_path, exist_ok=True)
 
     app.config['UPLOAD_FOLDER'] = upload_path
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB
 
     db.init_app(app)
 
