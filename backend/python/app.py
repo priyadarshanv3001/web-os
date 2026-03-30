@@ -1,9 +1,11 @@
 import os
+import traceback
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
+from werkzeug.exceptions import HTTPException
 from models import db
 
 from routes.auth import auth_bp
@@ -15,16 +17,16 @@ from routes.editor import editor_bp
 from routes.pomodoro import pomodoro_bp
 from routes.storage import storage_bp
 
-
 def create_app():
     # ✅ Set frontend folder
+    # Relative path from backend/python to frontend
     frontend_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), '..', '..', 'frontend')
     )
 
     app = Flask(__name__, static_folder=frontend_dir, static_url_path='')
 
-    # ✅ Enable CORS (important for Netlify → Render communication)
+    # ✅ Enable CORS
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
     # ✅ Database config (SQLite)
@@ -56,6 +58,26 @@ def create_app():
     app.register_blueprint(pomodoro_bp, url_prefix='/api/pomodoro')
     app.register_blueprint(storage_bp, url_prefix='/api/storage')
 
+    # ✅ Global Error Handler (Nuclear Option for Debugging 500s)
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        # pass through HTTP errors
+        if isinstance(e, HTTPException):
+            return e
+        print("🔥 GLOBAL BACKEND CRASH:", str(e))
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": "Global Server Error",
+            "details": str(e)
+        }), 500
+
+    # ✅ Global Before Request for Hit Logging
+    @app.before_request
+    def log_request_info():
+        if request.path.startswith('/api/'):
+            print(f"📡 GLOBAL HIT: {request.method} {request.path}")
+
     # ✅ Serve frontend pages properly
     @app.route('/')
     def index():
@@ -65,7 +87,7 @@ def create_app():
     def login_page():
         return send_from_directory(app.static_folder, 'login.html')
 
-    @app.route('/login.html')  # 🔥 IMPORTANT FIX
+    @app.route('/login.html')
     def login_html():
         return send_from_directory(app.static_folder, 'login.html')
 
@@ -75,10 +97,10 @@ def create_app():
 
     return app
 
-
-# ✅ Render-compatible run
+# ✅ Pre-create app for gunicorn/render
 app = create_app()
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    # Using threaded=True just in case of blocking I/O
+    app.run(host="0.0.0.0", port=port, debug=False)
