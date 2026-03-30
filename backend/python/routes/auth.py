@@ -3,37 +3,44 @@ from models import db, User, OTP, verify_and_clear_otp
 from email_service import send_otp_email
 import random
 from datetime import datetime, timedelta
+import traceback
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/send-otp', methods=['POST'])
 def handle_send_otp():
-    data = request.json
-    reg_number = data.get('registration_number')
-    email = data.get('email')
-
-    if not reg_number or not email:
-        return jsonify({"error": "Registration number and email are required"}), 400
-
-    if "@" not in email:
-        return jsonify({"error": "Invalid email format"}), 400
-
-    # Generate 6-digit OTP
-    otp_code = str(random.randint(100000, 999999))
-    expires = datetime.utcnow() + timedelta(minutes=5)
-    
-    # Save to db
-    new_otp = OTP(email=email, code=otp_code, expires_at=expires)
-    db.session.add(new_otp)
-    db.session.commit()
-
-    # Send email
+    print("🚀 ROUTE HIT: /api/auth/send-otp")
     try:
-        print("---- SEND OTP CALLED ----")
+        data = request.get_json(force=True, silent=True)
         print("DATA RECEIVED:", data)
-        print("EMAIL:", email)
-        print("OTP GENERATED:", otp_code)
 
+        if not data:
+            print("ERROR: No JSON data received or invalid format")
+            return jsonify({"success": False, "error": "Invalid request - No JSON data"}), 400
+
+        reg_number = data.get('registration_number')
+        email = data.get('email')
+        print("REG NUMBER:", reg_number)
+        print("EMAIL:", email)
+
+        if not reg_number or not email:
+            print("ERROR: Missing reg_number or email")
+            return jsonify({"success": False, "error": "Registration number and email are required"}), 400
+
+        # Generate 6-digit OTP
+        otp_code = str(random.randint(100000, 999999))
+        print("OTP GENERATED:", otp_code)
+        
+        expires = datetime.utcnow() + timedelta(minutes=5)
+        
+        # Save to db
+        new_otp = OTP(email=email, code=otp_code, expires_at=expires)
+        db.session.add(new_otp)
+        db.session.commit()
+        print("DB SUCCESS: OTP saved")
+
+        # Send email
+        print("---- SENDING EMAIL VIA BREVO ----")
         success = send_otp_email(email, otp_code)
         print("EMAIL SENT STATUS:", success)
         
@@ -47,8 +54,8 @@ def handle_send_otp():
                 "success": False,
                 "error": "Failed to send OTP via Brevo API. Check backend logs."
             }), 500
+
     except Exception as e:
-        import traceback
         print("🔥 FULL ERROR TRACEBACK:")
         traceback.print_exc()   # THIS IS THE KEY LINE
         return jsonify({
