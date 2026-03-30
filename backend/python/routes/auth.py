@@ -42,10 +42,10 @@ def handle_send_otp():
                 "error": "Failed to send OTP via Brevo API. Check backend logs."
             }), 500
     except Exception as e:
-        print("EXCEPTION in /send-otp route:", str(e))
+        print("🔥 BACKEND CRASH:", str(e))
         return jsonify({
             "success": False,
-            "error": "Internal server error during OTP dispatch."
+            "error": f"Backend crash: {str(e)}"
         }), 500
 
 @auth_bp.route('/verify-otp', methods=['POST'])
