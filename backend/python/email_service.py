@@ -6,14 +6,18 @@ def send_otp_email(email, otp_code):
     Sends an OTP email using the Brevo (Sendinblue) API.
     """
     api_key = os.environ.get("BREVO_API_KEY")
-    sender_email = os.environ.get("BREVO_SENDER") or "Bpriyadarshan3001@gmail.com"
+    sender_email = os.environ.get("BREVO_SENDER")
 
-    print("DEBUG → API_KEY:", "FOUND" if api_key else "MISSING (None)")
-    print("DEBUG → SENDER:", sender_email)
-    print("DEBUG → RECEIVER:", email)
+    print("DEBUG → BREVO_API_KEY:", "FOUND" if api_key else "MISSING (None)")
+    print("DEBUG → BREVO_SENDER:", sender_email)
+    print("DEBUG → RECEIVER EMAIL:", email)
 
     if not api_key:
-        print("ERROR: BREVO_API_KEY MISSING")
+        print("ERROR: BREVO_API_KEY IS MISSING IN ENVIRONMENT")
+        return False
+        
+    if not sender_email:
+        print("ERROR: BREVO_SENDER IS MISSING IN ENVIRONMENT")
         return False
 
     url = "https://api.brevo.com/v3/smtp/email"
@@ -32,6 +36,7 @@ def send_otp_email(email, otp_code):
     }
 
     try:
+        print("DEBUG → Sending request to Brevo API...")
         response = requests.post(url, json=data, headers=headers)
         print("BREVO RESPONSE:", response.status_code, response.text)
         
@@ -39,5 +44,7 @@ def send_otp_email(email, otp_code):
         return response.status_code in [200, 201]
             
     except Exception as e:
-        print("EXCEPTION in send_otp_email:", str(e))
+        import traceback
+        print("🔥 EXCEPTION IN send_otp_email:")
+        traceback.print_exc()
         return False

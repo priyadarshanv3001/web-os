@@ -29,7 +29,13 @@ def handle_send_otp():
 
     # Send email
     try:
+        print("---- SEND OTP CALLED ----")
+        print("DATA RECEIVED:", data)
+        print("EMAIL:", email)
+        print("OTP GENERATED:", otp_code)
+
         success = send_otp_email(email, otp_code)
+        print("EMAIL SENT STATUS:", success)
         
         if success:
             return jsonify({
@@ -42,7 +48,9 @@ def handle_send_otp():
                 "error": "Failed to send OTP via Brevo API. Check backend logs."
             }), 500
     except Exception as e:
-        print("🔥 BACKEND CRASH:", str(e))
+        import traceback
+        print("🔥 FULL ERROR TRACEBACK:")
+        traceback.print_exc()   # THIS IS THE KEY LINE
         return jsonify({
             "success": False,
             "error": f"Backend crash: {str(e)}"
