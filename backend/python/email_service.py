@@ -6,7 +6,7 @@ def send_otp_email(email, otp_code):
     Sends an OTP email using the Brevo (Sendinblue) API.
     """
     api_key = os.environ.get("BREVO_API_KEY")
-    sender_email = os.environ.get("Bpriyadarshan3001@gmail.com")
+    sender_email = "priyadarshan3001@gmail.com"
     
     if not api_key or not sender_email:
         print(f"[WARNING] BREVO_API_KEY or BREVO_SENDER not set in environment variables.")
